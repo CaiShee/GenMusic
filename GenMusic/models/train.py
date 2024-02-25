@@ -16,8 +16,19 @@ def train(dataloader: DataLoader, model: nn.Module,
           autoSave: bool = True, autoPrint: int = 10, autoLog=True) -> nn.Module:
     """_summary_
 
+    Args:
+        dataloader (DataLoader): train the model
+        model (nn.Module): _description_
+        criterion (nn.modules.loss._Loss): _description_
+        optimizer (torch.optim.Optimizer): _description_
+        epoch (int): _description_
+        device (torch.device): _description_
+        autoSave (bool, optional): _description_. Defaults to True.
+        autoPrint (int, optional): _description_. Defaults to 10.
+        autoLog (bool, optional): _description_. Defaults to True.
+
     Returns:
-        _type_: _description_
+        nn.Module: _description_
     """
     log = ""
     model = model.to(device)
@@ -63,7 +74,12 @@ def train(dataloader: DataLoader, model: nn.Module,
 
 
 def pt2onnx(pt_path: str, *input_dims: int, device: torch.device = torch.device("cpu")):
+    """.pt to .onnx
 
+    Args:
+        pt_path (str): _description_
+        device (torch.device, optional): _description_. Defaults to torch.device("cpu").
+    """
     dir_name = os.path.dirname(pt_path)
     file_name = os.path.basename(pt_path)
     file_name = file_name.split(".")[0]

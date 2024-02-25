@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 import geatpy as ea
 from typing import Callable
 from .rewarders import rewarder
@@ -42,10 +41,11 @@ class ga_generator():
     def __init__(self, rwd: rewarder) -> None:
         self.rewarder = rwd
         self.ga_pbl = ga_problem()
+        self.best_tensor = None
 
-    def set_problem_params(self, name: str, M: int, maxormins: "list[int]", Dim: int,
+    def set_problem_params(self, maxormins: "list[int]", Dim: int,
                            varTypes: "list[int]", lb: "list[int]", ub: "list[int]",
-                           lbin: "list[int]" = None, ubin: "list[int]" = None):
+                           name: str = "problem", M: int = 1, lbin: "list[int]" = None, ubin: "list[int]" = None):
         """设置 problem 参数
 
         Args:
@@ -95,6 +95,12 @@ class ga_generator():
         self.myAlgorithm.drawing = drawing
 
     def generate_ori(self, sv_path: str = "", show_log: bool = False):
+        """_summary_
+
+        Args:
+            sv_path (str, optional): _description_. Defaults to "".
+            show_log (bool, optional): _description_. Defaults to False.
+        """
         [self.BestIndi, self.last_population] = self.myAlgorithm.run()
         if sv_path != "":
             self.BestIndi.save(sv_path)
@@ -106,10 +112,17 @@ class ga_generator():
                     print(self.BestIndi.Phen[0, i])
             else:
                 print('没找到可行解。')
+        if self.BestIndi.sizes != 0:
+            l = list()
+            for i in range(self.BestIndi.Phen.shape[1]):
+                l.append(self.BestIndi.Phen[0, i])
+        self.best_tensor = torch.tensor(l)
+        self.best_tensor = self.best_tensor.float()
 
     def aimFun_1(self, plb: 'ga_problem', pop: ea.Population):
         x = pop.Phen
         x = torch.from_numpy(x)
+        x = x.float()
         y = self.rewarder.reward(x)
-        y = y.numpy()
+        y = y.detach().numpy()
         pop.ObjV = y
