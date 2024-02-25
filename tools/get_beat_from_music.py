@@ -17,6 +17,6 @@ def get_beat_from_music(music_folder: str, sv_folder: str):
 
 
 if __name__ == "__main__":
-    music_folder = "/home/csy/Desktop/GenMusic/Data/PMEmo2019/chorus"
-    sv_folder = "/home/csy/Desktop/GenMusic/Data/Beat_after_PMEmo"
+    music_folder = "Data/PMEmo2019/chorus"
+    sv_folder = "Data/Beat_dataset/Beat_after_PMEmo"
     get_beat_from_music(music_folder, sv_folder)

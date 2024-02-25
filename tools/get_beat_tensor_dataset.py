@@ -65,10 +65,11 @@ def get_beat_tensor_dataset_rsz(anno_path: str, load_folder: str, sv_pth: str, t
     dic["l"] = to_len
     torch.save(dic, sv_pth)
 
+
 if __name__ == "__main__":
     to_len = 75
-    annos_path = "/home/csy/Desktop/GenMusic/Data/PMEmo2019/annotations/static_annotations.csv"
-    from_pth = "/home/csy/Desktop/GenMusic/Data/Beat_dataset/Beat_after_PMEmo_no_head"
-    to_pth = "/home/csy/Desktop/GenMusic/Data/Beat_dataset/Beat_tensor_dataset/beat_no_head_rsz_" + \
+    annos_path = "Data/PMEmo2019/annotations/static_annotations.csv"
+    from_pth = "Data/Beat_dataset/Beat_after_PMEmo_no_head"
+    to_pth = "Data/Beat_dataset/Beat_tensor_dataset/beat_no_head_rsz_" + \
         str(to_len)+".pt"
     get_beat_tensor_dataset_rsz(annos_path, from_pth, to_pth, to_len)
