@@ -84,3 +84,31 @@ class nngrader_rewarder(rewarder):
 def get_nngrader_rewarder(nn_pth: str) -> nngrader_rewarder:
     nn_pretrained = torch.load(nn_pth)
     return nngrader_rewarder(nn_pretrained)
+
+
+class sad_test_rewarder(rewarder):
+    def __init__(self) -> None:
+        super().__init__()
+        self.pitchs = [0, 2, 4, 5, 7, 9]
+        self.rhythms = [1, 0]
+
+    def reward(self, env: torch.Tensor) -> torch.Tensor:
+        audio_num = round(env.shape[1]/2)
+        audio_pitch = env[:, :audio_num]
+        audio_rhythm = env[:, audio_num:]
+
+        rwd_score = torch.zeros((audio_pitch.shape[0], 1))
+        for pitch in self.pitchs:
+            tmp = torch.round(audio_pitch-pitch)
+            tmp = torch.where(tmp == 0, 1, 0)
+            tmp = torch.sum(tmp, dim=1)
+            tmp = torch.reshape(tmp, (-1, 1))
+            rwd_score += tmp
+        for rhy in self.rhythms:
+            tmp = torch.round(audio_rhythm-rhy)
+            tmp = torch.where(tmp == 0, 0.5, 0)
+            tmp = torch.sum(tmp, dim=1)
+            tmp = torch.reshape(tmp, (-1, 1))
+            rwd_score += tmp
+
+        return rwd_score

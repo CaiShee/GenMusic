@@ -126,3 +126,11 @@ class ga_generator():
         y = self.rewarder.reward(x)
         y = y.detach().numpy()
         pop.ObjV = y
+
+    def aimFun_2(self, plb: 'ga_problem', pop: ea.Population):
+        x = pop.Phen
+        x = torch.from_numpy(x)
+        x = x.float()
+        y = self.rewarder.reward(x)
+        y = y.numpy()
+        pop.ObjV = y
