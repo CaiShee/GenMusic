@@ -1,1 +1,0 @@
-from .nnrwd_ga import *

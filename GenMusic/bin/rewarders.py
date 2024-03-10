@@ -1,6 +1,10 @@
 import torch
+import numpy as np
 import warnings
 from torch import nn
+import glob
+import os
+from dtw import dtw
 # from .classifiers import classifier, nn_classifier
 
 
@@ -8,7 +12,7 @@ class rewarder():
     def __init__(self) -> None:
         ...
 
-    def reward(self, env: torch.Tensor) -> torch.Tensor:
+    def reward(self, env: "torch.Tensor|np.ndarray") -> torch.Tensor:
         ...
 
 
@@ -112,3 +116,61 @@ class sad_test_rewarder(rewarder):
             rwd_score += tmp
 
         return rwd_score
+
+
+class test_dtw_midi_rewarder(rewarder):
+    def __init__(self, happy_path: str, sad_path: str, covInv_path: str) -> None:
+        self.happy_templates = [np.load(h) for h in glob.glob(
+            os.path.join(happy_path, "*"))]
+        self.sad_templates = [np.load(s) for s in glob.glob(
+            os.path.join(sad_path, "*"))]
+        self.covInv = np.load(covInv_path)
+        self.m_ds = lambda x, y: np.sqrt(
+            np.dot(np.dot((x-y), self.covInv), (x-y).T))
+
+    def reward(self, envs: np.ndarray) -> np.ndarray:
+        rwd = np.zeros((len(envs), 1))
+        l = envs.shape[1]//4
+        for i in range(len(envs)):
+            env = np.zeros((4, l))
+            env[0, :] = envs[i, :l]
+            env[1, :] = envs[i, l:2*l]
+            env[2, :] = envs[i, 2*l:3*l]
+            env[3, :] = envs[i, 3*l:]
+            env = env.T
+
+            min_dis = 1e9
+            for tmp in self.sad_templates:
+                d, _, _, _ = dtw(tmp, env, dist=self.m_ds)
+                if d < min_dis:
+                    min_dis = d
+            rwd[i] = min_dis
+        return rwd
+
+    def set_tgt(self, tgt: str) -> None:
+        self.tgt = tgt
+
+    @staticmethod
+    def dtw(dist_matrix: np.ndarray) -> float:
+        # 获取距离矩阵的大小
+        n, m = dist_matrix.shape
+
+        # 初始化累积距离矩阵
+        acc_dist_matrix = np.zeros((n, m))
+        acc_dist_matrix[0, 0] = dist_matrix[0, 0]
+
+        # 计算第一行和第一列的累积距离
+        acc_dist_matrix[1:, 0] = np.cumsum(dist_matrix[1:, 0])
+        acc_dist_matrix[0, 1:] = np.cumsum(dist_matrix[0, 1:])
+
+        # 计算剩余单元格的累积距离
+        for i in range(1, n):
+            for j in range(1, m):
+                acc_dist_matrix[i, j] = min(
+                    acc_dist_matrix[i-1, j],    # 插入
+                    acc_dist_matrix[i, j-1],    # 替换
+                    acc_dist_matrix[i-1, j-1]   # 删除
+                ) + dist_matrix[i, j]
+
+        # 返回DTW距离（右下角的累积距离）
+        return acc_dist_matrix[-1, -1]

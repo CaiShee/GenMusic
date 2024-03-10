@@ -1,1 +1,0 @@
-INPUT_NN_LEN = 20

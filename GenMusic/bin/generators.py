@@ -120,6 +120,12 @@ class ga_generator():
         self.best_tensor = self.best_tensor.float()
 
     def aimFun_1(self, plb: 'ga_problem', pop: ea.Population):
+        """reward type : torch.Tensor with grad
+
+        Args:
+            plb (ga_problem): _description_
+            pop (ea.Population): _description_
+        """
         x = pop.Phen
         x = torch.from_numpy(x)
         x = x.float()
@@ -128,9 +134,26 @@ class ga_generator():
         pop.ObjV = y
 
     def aimFun_2(self, plb: 'ga_problem', pop: ea.Population):
+        """reward type : torch.Tensor without grad
+
+        Args:
+            plb (ga_problem): _description_
+            pop (ea.Population): _description_
+        """
         x = pop.Phen
         x = torch.from_numpy(x)
         x = x.float()
         y = self.rewarder.reward(x)
         y = y.numpy()
+        pop.ObjV = y
+
+    def aimFun_3(self, plb: 'ga_problem', pop: ea.Population):
+        """reward type : numpy.ndarray
+
+        Args:
+            plb (ga_problem): _description_
+            pop (ea.Population): _description_
+        """
+        x = pop.Phen
+        y = self.rewarder.reward(x)
         pop.ObjV = y
