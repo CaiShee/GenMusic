@@ -9,7 +9,6 @@ def get_feature(file_name: str) -> "tuple[list[dict],np.ndarray]":
     midi_file = MidiFile(file_name)
     active_notes = {}
     notes_info = []
-    # print(midi_file)
     for i, track in enumerate(midi_file.tracks):
         time = 0
         for msg in track:
@@ -26,7 +25,7 @@ def get_feature(file_name: str) -> "tuple[list[dict],np.ndarray]":
                         'pitch': active_notes[msg.note]['pitch'],
                         'start': active_notes[msg.note]['start'],
                         'duration': duration,
-                        'velocity':active_notes[msg.note]['velocity']
+                        'velocity': active_notes[msg.note]['velocity']
                     })
                     del active_notes[msg.note]
     notes_info = sorted(notes_info, key=lambda x: x['start'])

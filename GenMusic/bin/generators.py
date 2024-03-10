@@ -2,7 +2,6 @@ import torch
 import geatpy as ea
 from typing import Callable
 from .rewarders import rewarder
-
 from .rewarders import *
 
 
@@ -42,6 +41,7 @@ class ga_generator():
         self.rewarder = rwd
         self.ga_pbl = ga_problem()
         self.best_tensor = None
+        self.__init_aimFunc()
 
     def set_problem_params(self, maxormins: "list[int]", Dim: int,
                            varTypes: "list[int]", lb: "list[int]", ub: "list[int]",
@@ -61,9 +61,6 @@ class ga_generator():
         """
         self.ga_pbl.set_params(name, M, maxormins, Dim,
                                varTypes, lb, ub, lbin, ubin)
-
-    def set_problem_aimFunc(self, func: Callable[['ga_problem', ea.Population], None]):
-        self.ga_pbl.link_func(func)
 
     def set_population_params(self, Encoding: str = 'BG', nind: int = 40):
         """设置种群参数
@@ -119,7 +116,21 @@ class ga_generator():
         self.best_tensor = torch.tensor(l)
         self.best_tensor = self.best_tensor.float()
 
-    def aimFun_1(self, plb: 'ga_problem', pop: ea.Population):
+    def set_tgt(self, p: "torch.Tensor|str"):
+        self.rewarder.set_tgt(p)
+
+    def __set_problem_aimFunc(self, func: Callable[['ga_problem', ea.Population], None]):
+        self.ga_pbl.link_func(func)
+
+    def __init_aimFunc(self):
+        if self.rewarder.rwd_type == "tensor_without_grad":
+            self.__set_problem_aimFunc(self.__tensor_without_grad)
+        if self.rewarder.rwd_type == "tensor_with_grad":
+            self.__set_problem_aimFunc(self.__tensor_with_grad)
+        if self.rewarder.rwd_type == "np_ndarray":
+            self.__set_problem_aimFunc(self.__np_ndarray)
+
+    def __tensor_with_grad(self, plb: 'ga_problem', pop: ea.Population):
         """reward type : torch.Tensor with grad
 
         Args:
@@ -133,7 +144,7 @@ class ga_generator():
         y = y.detach().numpy()
         pop.ObjV = y
 
-    def aimFun_2(self, plb: 'ga_problem', pop: ea.Population):
+    def __tensor_without_grad(self, plb: 'ga_problem', pop: ea.Population):
         """reward type : torch.Tensor without grad
 
         Args:
@@ -147,7 +158,7 @@ class ga_generator():
         y = y.numpy()
         pop.ObjV = y
 
-    def aimFun_3(self, plb: 'ga_problem', pop: ea.Population):
+    def __np_ndarray(self, plb: 'ga_problem', pop: ea.Population):
         """reward type : numpy.ndarray
 
         Args:

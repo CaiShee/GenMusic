@@ -5,20 +5,24 @@ from torch import nn
 import glob
 import os
 from dtw import dtw
-# from .classifiers import classifier, nn_classifier
 
 
 class rewarder():
     def __init__(self) -> None:
+        self.rwd_type = "np_ndarray"
         ...
 
     def reward(self, env: "torch.Tensor|np.ndarray") -> torch.Tensor:
+        ...
+
+    def set_tgt(self, p: "torch.Tensor|str"):
         ...
 
 
 class demo_rewarder(rewarder):
     def __init__(self) -> None:
         super().__init__()
+        self.rwd_type = "tensor_without_grad"
 
     @staticmethod
     def reward(env: torch.Tensor, *args, **kwargs) -> torch.Tensor:
@@ -33,45 +37,11 @@ class demo_rewarder(rewarder):
         return output
 
 
-# class classify_rewarder(rewarder):
-#     def __init__(self, clf: classifier) -> None:
-#         super().__init__()
-#         self.clf = clf
-#         self.reward_item = 0
-
-#     def reward(self, env: torch.Tensor) -> torch.Tensor:
-#         """ dim of env < 3
-
-#         Args:
-#             env (torch.Tensor): _description_
-
-#         Returns:
-#             torch.Tensor: _description_
-#         """
-
-#         if len(env) == 0:
-#             raise RuntimeError("The length of env must > 0!")
-
-#         classification = self.clf.classify(env)
-#         classification_dim = classification.dim()
-
-#         if classification_dim > 2:
-#             raise RuntimeError("classification_dim must < 3 !")
-
-#         output = classification[(slice(None),) *
-#                                 classification_dim + (self.reward_item,)]
-#         output = torch.reshape(output, (-1, 1))
-
-#         return output
-
-#     def set_item_class(self, item_idx: int) -> None:
-#         self.reward_item = item_idx
-
-
 class nngrader_rewarder(rewarder):
     def __init__(self, grader: nn.Module) -> None:
         self.dev = torch.device('cpu')
         self.grader = grader.to(self.dev)
+        self.rwd_type = "tensor_with_grad"
 
     def reward(self, env: torch.Tensor) -> torch.Tensor:
         b = len(env)
@@ -90,11 +60,12 @@ def get_nngrader_rewarder(nn_pth: str) -> nngrader_rewarder:
     return nngrader_rewarder(nn_pretrained)
 
 
-class sad_test_rewarder(rewarder):
+class sad_simple_rewarder(rewarder):
     def __init__(self) -> None:
         super().__init__()
         self.pitchs = [0, 2, 4, 5, 7, 9]
         self.rhythms = [1, 0]
+        self.rwd_type = "tensor_without_grad"
 
     def reward(self, env: torch.Tensor) -> torch.Tensor:
         audio_num = round(env.shape[1]/2)
@@ -118,7 +89,7 @@ class sad_test_rewarder(rewarder):
         return rwd_score
 
 
-class test_dtw_midi_rewarder(rewarder):
+class demo_dtw_midi_rewarder(rewarder):
     def __init__(self, happy_path: str, sad_path: str, covInv_path: str) -> None:
         self.happy_templates = [np.load(h) for h in glob.glob(
             os.path.join(happy_path, "*"))]
@@ -127,6 +98,7 @@ class test_dtw_midi_rewarder(rewarder):
         self.covInv = np.load(covInv_path)
         self.m_ds = lambda x, y: np.sqrt(
             np.dot(np.dot((x-y), self.covInv), (x-y).T))
+        self.rwd_type = "np_ndarray"
 
     def reward(self, envs: np.ndarray) -> np.ndarray:
         rwd = np.zeros((len(envs), 1))
@@ -140,7 +112,7 @@ class test_dtw_midi_rewarder(rewarder):
             env = env.T
 
             min_dis = 1e9
-            for tmp in self.sad_templates:
+            for tmp in self.templates:
                 d, _, _, _ = dtw(tmp, env, dist=self.m_ds)
                 if d < min_dis:
                     min_dis = d
@@ -148,7 +120,10 @@ class test_dtw_midi_rewarder(rewarder):
         return rwd
 
     def set_tgt(self, tgt: str) -> None:
-        self.tgt = tgt
+        if tgt == "happy":
+            self.templates = self.happy_templates
+        if tgt == "sad":
+            self.templates = self.sad_templates
 
     @staticmethod
     def dtw(dist_matrix: np.ndarray) -> float:
